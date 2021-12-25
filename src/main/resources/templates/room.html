@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.9.0/themes/base/jquery-ui.css"/>
+</head>
+<body>
+<h4 th:text="'Room Number: ' + ${room.getNumber()}"></h4>
+<h4 th:text="'Floor: ' + ${room.getFloor()}"></h4>
+<h4 th:text="'Room Category Name: ' + ${room.getRoomCategory().getName()}"></h4>
+<h4 th:text="'Room Category Description: ' + ${room.getRoomCategory().getDescription()}"></h4>
+<h4 th:text="'Room Category Capacity: ' + ${room.getRoomCategory().getCapacity()}"></h4>
+<form th:method="post"
+      th:action="@{'/hotels/{hotelId}/rooms/{roomId}' (hotelId=${room.getHotel().getId()}, roomId=${room.getId()})}">
+    <input type="hidden" value="${room.getId()}"/>
+    <input type="number" placeholder="Number of guests"/></br>
+
+    <input id="date_from"/>
+    <input id="date_to"/>
+    <!--    <input id="date_to" style="width:100%; height:30px;" />-->
+    <!--    <input type="date" id="date_from" onchange="calculatePrice()" name="date_from" placeholder="Date from"/></br>-->
+    <!--    <input type="date" id="date_to" onchange="calculatePrice()" name="date_to" placeholder="Date to"/></br>-->
+    <h2 style="color:deepskyblue;" id="totalPrice">0</h2>
+    <button type="submit">RESERVE ROOM</button>
+</form>
+
+<script
+        src="https://code.jquery.com/jquery-3.6.0.js"
+        integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+        crossorigin="anonymous">
+</script>
+<script
+        src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"
+        integrity="sha256-xH4q8N0pEzrZMaRmd7gQVcTZiFei+HfRTBPJ1OGXC0k="
+        crossorigin="anonymous"></script>
+<script type="text/javascript">
+    function calculatePrice() {
+        const dateFrom = new Date(document.getElementById("date_from").value);
+        const dateTo = new Date(document.getElementById("date_to").value);
+        const diffTime = Math.abs(dateTo - dateFrom);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        document.getElementById("totalPrice").innerHTML = !isNaN(dateFrom.getTime()) && !isNaN(dateTo.getTime()) ? diffDays * 1000 : 0;
+    }
+
+    $(document).ready(function () {
+        var data;
+        const getAvailableDates = (function(){
+            $.ajax({
+                url: "/api/" + '[[${room.id}]]',
+                type: "GET",
+                contentType: 'application/json',
+                dataType: 'json',
+                success: function (json) {
+                    data = json;
+                },
+                error: function (xhr, status, error) {
+                    alert('error');
+                }
+            });
+        })
+        getAvailableDates();
+        $("#date_from").datepicker({
+            dateFormat: "yy/m/d",
+            monthNames: ["Јануари", "Февруари", "Март", "Април", "Мај", "Јуни", "Јули", "Август", "Септември", "Октомври", "Ноември", "Декември"],
+            changeMonth: true,
+            changeYear: true,
+            beforeShowDay: function (date) {
+                for (var i = 0; i < data.length; i++) {
+                    var raw_dates = data[i].split('/');
+                    var date_from = new Date(raw_dates[0]);
+                    var date_to = new Date(raw_dates[1]);
+                    date_to.setHours(0);
+                    date_from.setHours(0);
+                    if(date_to >= date && date_from <= date)
+                    {
+                        return [false];
+                    }
+                }
+                return [true];
+            }
+        });
+    });
+</script>
+</body>
+</html>
