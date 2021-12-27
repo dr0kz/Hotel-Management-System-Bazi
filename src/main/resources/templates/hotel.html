@@ -25,7 +25,11 @@
             <h4 class="text-center">Availble rooms</h4>
             <div th:each="room : ${hotel.getRooms()}" class="room-information">
                 <h4 th:text="'Room Category Name: ' + ${room.getRoomCategory().getName()}"></h4>
-                <a th:href="@{/hotels/{hotelId}/rooms/{roomId}(hotelId=${hotel.getId()},roomId=${room.getId()})}">DETAILS</a>
+                <form th:method="get" action="/hotels/rooms">
+                    <input type="hidden" name="hotelId" th:value="${hotel.getId()}" />
+                    <input type="hidden" name="roomId" th:value="${room.getId()}" />
+                    <button type="submit">DETAILS</button>
+                </form>
             </div>
         </div>
     </div>

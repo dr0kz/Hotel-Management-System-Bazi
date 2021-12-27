@@ -10,4 +10,7 @@ public class RoomPriceCategory implements Serializable {
         this.roomCategory = roomCategory;
         this.id = id;
     }
+
+    public RoomPriceCategory() {
+    }
 }

@@ -4,26 +4,35 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.9.0/themes/base/jquery-ui.css"/>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 </head>
 <body>
-<h4 th:text="'Room Number: ' + ${room.getNumber()}"></h4>
-<h4 th:text="'Floor: ' + ${room.getFloor()}"></h4>
-<h4 th:text="'Room Category Name: ' + ${room.getRoomCategory().getName()}"></h4>
-<h4 th:text="'Room Category Description: ' + ${room.getRoomCategory().getDescription()}"></h4>
-<h4 th:text="'Room Category Capacity: ' + ${room.getRoomCategory().getCapacity()}"></h4>
-<form th:method="post"
-      th:action="@{'/hotels/{hotelId}/rooms/{roomId}' (hotelId=${room.getHotel().getId()}, roomId=${room.getId()})}">
-    <input type="hidden" value="${room.getId()}"/>
-    <input type="number" placeholder="Number of guests"/></br>
+<div class="bg-light">
+    <div class="container text-center">
+        <h5 th:text="'Room Number: ' + ${room.getNumber()}"></h5>
+        <h5 th:text="'Floor: ' + ${room.getFloor()}"></h5>
+        <h5 th:text="'Room Category Name: ' + ${room.getRoomCategory().getName()}"></h5>
+        <h5 th:text="'Room Category Description: ' + ${room.getRoomCategory().getDescription()}"></h5>
+        <h5 th:text="'Room Category Capacity: ' + ${room.getRoomCategory().getCapacity()}"></h5>
+        <form th:method="get" action="/hotels/rooms/reserve">
+            <input type="hidden" th:value="${room.getHotel().getId()}" name="hotelId"/>
+            <input type="hidden" th:value="${room.getId()}" name="roomId"/>
+            <input type="number" name="numberOfGuests" placeholder="Number of guests"/></br>
+            <input id="date_from" name="dateFrom" placeholder="Check In"/></br>
+            <input id="date_to" name="dateTo" placeholder="Check Out"/>
+            <input type="hidden" style="color:deepskyblue;" id="totalPriceInput" name="totalAmount" value="0"/></br>
+            <h6 style="color:darkgoldenrod;" id="totalPrice" name="totalAmount">Total Price: 0</h6>
+            <input type="text" name="ssn" placeholder="Ssn" /></br>
+            <input type="text" name="email" placeholder="Email" /></br>
+            <input type="text" name="firstName" placeholder="Name" /></br>
+            <input type="text" name="lastName" placeholder="Surname" /></br>
+            <button type="submit" id="reserve">RESERVE ROOM</button>
+        </form>
+    </div>
+</div>
 
-    <input id="date_from"/>
-    <input id="date_to"/>
-    <!--    <input id="date_to" style="width:100%; height:30px;" />-->
-    <!--    <input type="date" id="date_from" onchange="calculatePrice()" name="date_from" placeholder="Date from"/></br>-->
-    <!--    <input type="date" id="date_to" onchange="calculatePrice()" name="date_to" placeholder="Date to"/></br>-->
-    <h2 style="color:deepskyblue;" id="totalPrice">0</h2>
-    <button type="submit">RESERVE ROOM</button>
-</form>
+
 
 <script
         src="https://code.jquery.com/jquery-3.6.0.js"
@@ -35,14 +44,6 @@
         integrity="sha256-xH4q8N0pEzrZMaRmd7gQVcTZiFei+HfRTBPJ1OGXC0k="
         crossorigin="anonymous"></script>
 <script type="text/javascript">
-    function calculatePrice() {
-        const dateFrom = new Date(document.getElementById("date_from").value);
-        const dateTo = new Date(document.getElementById("date_to").value);
-        const diffTime = Math.abs(dateTo - dateFrom);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        document.getElementById("totalPrice").innerHTML = !isNaN(dateFrom.getTime()) && !isNaN(dateTo.getTime()) ? diffDays * 1000 : 0;
-    }
 
     $(document).ready(function () {
         var data;
@@ -62,7 +63,7 @@
         })
         getAvailableDates();
         $("#date_from").datepicker({
-            dateFormat: "yy/m/d",
+            dateFormat: "yy/mm/dd",
             monthNames: ["Јануари", "Февруари", "Март", "Април", "Мај", "Јуни", "Јули", "Август", "Септември", "Октомври", "Ноември", "Декември"],
             changeMonth: true,
             changeYear: true,
@@ -73,14 +74,72 @@
                     var date_to = new Date(raw_dates[1]);
                     date_to.setHours(0);
                     date_from.setHours(0);
-                    if(date_to >= date && date_from <= date)
+                    if(date < date_to && date >= date_from)
                     {
                         return [false];
                     }
                 }
-                return [true];
+                return date <= new Date() ? [false] : [true];
             }
         });
+        $("#date_to").datepicker({
+            dateFormat: "yy/mm/dd",
+            monthNames: ["Јануари", "Февруари", "Март", "Април", "Мај", "Јуни", "Јули", "Август", "Септември", "Октомври", "Ноември", "Декември"],
+            changeMonth: true,
+            changeYear: true,
+            beforeShowDay: function (date) {
+                var date_from = new Date($('#date_from').val());
+                if(date >= date_from)
+                {
+                    for (var i = 0; i < data.length; i++) {
+                        var raw_dates = data[i].split('/');
+                        var date_from_database = new Date(raw_dates[0]);
+                        date_from_database.setHours(0);
+                        if(date_from_database < date && date_from_database>date_from)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return date <= new Date() || date<=date_from ? [false] : [true];
+            }
+        })
+        $("#date_from, #date_to").on('change',function(){
+
+            if(checkIfDatesAreValid())
+            {
+                var datef = new Date($('#date_from').val());
+                var datet = new Date($('#date_to').val());
+                var from = [datef.getFullYear(), ("0" + (datef.getMonth()+1)).slice(-2),("0"+datef.getDate()).slice(-2)].join("-");
+                var to = [datet.getFullYear(),("0" + (datet.getMonth()+1)).slice(-2),("0"+datet.getDate()).slice(-2)].join("-");
+
+                $.ajax({
+                    url: "/api/" + '[[${room.id}]]/price?from='+from+'&to='+to,
+                    type: "GET",
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    success: function (json) {
+                        document.getElementById('totalPriceInput').setAttribute("value", json);
+                        document.getElementById('totalPrice').innerHTML = 'Total Price: '+json;
+                    },
+                    error: function (xhr, status, error) {
+                        alert('error');
+                    }
+                });
+            }
+        })
+        $('#reserve').on('click', function(){
+            var date_from = new Date($('#date_from').val())
+            var date_to = new Date($('#date_to').val())
+            $('#date_from').val(date_from.getFullYear()+'-'+("0" + (date_from.getMonth()+1)).slice(-2)
+                +'-'+("0" + date_from.getDate()).slice(-2));
+            $('#date_to').val(date_to.getFullYear()+'-'+("0" + (date_to.getMonth()+1)).slice(-2)
+                +'-'+("0" + date_to.getDate()).slice(-2));
+        })
+        function checkIfDatesAreValid()
+        {
+            return !isNaN(new Date($('#date_from').val()).getTime()) && !isNaN(new Date($('#date_to').val()).getTime());
+        }
     });
 </script>
 </body>

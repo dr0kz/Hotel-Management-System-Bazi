@@ -25,4 +25,7 @@ public class RoomPrice {
     @Column(name="date_to")
     private LocalDate dateTo;
     private Integer price;
+
+    public RoomPrice() {
+    }
 }
